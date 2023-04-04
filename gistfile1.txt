@@ -1,0 +1,58 @@
+#include <WiFi.h>
+
+// Задайте имя и пароль для своей Wi-Fi сети
+const char* ssid = "имя_вашей_сети";
+const char* password = "ваш_пароль";
+
+// Задайте номер пина, к которому подключен светодиод
+const int ledPin = 13;
+
+WiFiServer server(80);
+
+void setup() {
+  // Инициализация светодиода
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+
+  // Подключение к Wi-Fi сети
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("Connected to WiFi");
+
+  // Настройка веб-сервера
+  server.begin();
+  Serial.println("Web server started");
+}
+
+void loop() {
+  // Проверка наличия новых клиентов
+  WiFiClient client = server.available();
+  if (client) {
+    // Чтение HTTP-запроса
+    Serial.println("New client");
+    String request = client.readStringUntil('\r');
+    Serial.println(request);
+    client.flush();
+
+    // Отправка HTTP-ответа
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: text/html");
+    client.println("");
+
+    // Включение/выключение светодиода
+    if (request.indexOf("/LED=ON") != -1) {
+      digitalWrite(ledPin, HIGH);
+      client.println("<h1>LED is on</h1>");
+    } else if (request.indexOf("/LED=OFF") != -1) {
+      digitalWrite(ledPin, LOW);
+      client.println("<h1>LED is off</h1>");
+    }
+
+    // Закрытие соединения
+    client.stop();
+    Serial.println("Client disconnected");
+  }
+}
